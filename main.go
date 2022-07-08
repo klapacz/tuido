@@ -24,11 +24,22 @@ type todo struct {
 
 func (i todo) FilterValue() string { return "" }
 
+type editing struct {
+	editing bool
+	index   int
+	done    bool
+}
+
+type view struct {
+	adding  bool
+	editing editing
+}
+
 type model struct {
 	list      list.Model
 	textInput textinput.Model
 	keys      *listKeyMap
-	adding    bool
+	view      view
 }
 
 func (m model) Init() tea.Cmd {
@@ -42,7 +53,16 @@ func updateList(msg tea.Msg, m model) (tea.Model, tea.Cmd) {
 	case tea.KeyMsg:
 		switch {
 		case key.Matches(msg, m.keys.insertItem):
-			m.adding = true
+			m.textInput.Placeholder = "New todo text"
+			m.view = view{adding: true}
+			return m, nil
+		case key.Matches(msg, m.keys.edit):
+			if t, ok := m.list.SelectedItem().(todo); ok {
+				m.textInput.Placeholder = ""
+				m.textInput.SetValue(t.text)
+				e := editing{done: t.done, index: m.list.Index(), editing: true}
+				m.view = view{editing: e}
+			}
 			return m, nil
 		}
 	}
@@ -61,12 +81,17 @@ func updateAdding(msg tea.Msg, m model) (tea.Model, tea.Cmd) {
 		case "enter":
 			if val := m.textInput.Value(); val != "" {
 				m.textInput.Reset()
-				cmd = m.list.InsertItem(0, todo{val, false})
+				if m.view.adding {
+					cmd = m.list.InsertItem(0, todo{val, false})
+				} else {
+					t := todo{val, m.view.editing.done}
+					cmd = m.list.SetItem(m.view.editing.index, t)
+				}
 			}
-			m.adding = false
+			m.view = view{}
 			return m, cmd
 		case "esc":
-			m.adding = false
+			m.view = view{}
 			return m, nil
 		}
 	}
@@ -82,14 +107,14 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.list.SetSize(msg.Width-h, msg.Height-v)
 	}
 
-	if m.adding {
+	if m.view.adding || m.view.editing.editing {
 		return updateAdding(msg, m)
 	}
 	return updateList(msg, m)
 }
 
 func (m model) View() string {
-	if m.adding {
+	if m.view.adding || m.view.editing.editing {
 		return appStyle.Render(m.textInput.View())
 	}
 	return appStyle.Render(m.list.View())
@@ -114,11 +139,11 @@ func main() {
 	l.AdditionalFullHelpKeys = func() []key.Binding {
 		return []key.Binding{
 			listKeys.insertItem,
+			listKeys.edit,
 		}
 	}
 
 	ti := textinput.New()
-	ti.Placeholder = "New todo text"
 	ti.CharLimit = 156
 	ti.Width = 20
 	ti.Focus()
