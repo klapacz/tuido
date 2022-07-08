@@ -21,12 +21,12 @@ func newListKeyMap() *listKeyMap {
 }
 
 type delegateKeyMap struct {
-	toggleDone key.Binding
+	toggle key.Binding
 }
 
 func newDelegateKeyMap() *delegateKeyMap {
 	return &delegateKeyMap{
-		toggleDone: key.NewBinding(
+		toggle: key.NewBinding(
 			key.WithKeys(" ", "enter"),
 			key.WithHelp("space/enter", "toggle item"),
 		),

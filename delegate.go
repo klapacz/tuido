@@ -47,7 +47,7 @@ func newItemDelegate(keys *delegateKeyMap) itemDelegate {
 		switch msg := msg.(type) {
 		case tea.KeyMsg:
 			switch {
-			case key.Matches(msg, keys.toggleDone):
+			case key.Matches(msg, keys.toggle):
 				t.Done = !t.Done
 				return m.SetItem(m.Index(), t)
 			}
@@ -55,7 +55,7 @@ func newItemDelegate(keys *delegateKeyMap) itemDelegate {
 		return nil
 	}
 
-	help := []key.Binding{keys.toggleDone}
+	help := []key.Binding{keys.toggle}
 	d.ShortHelpFunc = func() []key.Binding {
 		return help
 	}
