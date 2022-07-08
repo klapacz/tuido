@@ -6,6 +6,7 @@ import (
 	"os"
 
 	"github.com/charmbracelet/bubbles/list"
+	"github.com/charmbracelet/bubbles/textinput"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 )
@@ -15,6 +16,13 @@ const listHeight = 14
 var (
 	itemStyle         = lipgloss.NewStyle().PaddingLeft(4)
 	selectedItemStyle = lipgloss.NewStyle().PaddingLeft(2).Foreground(lipgloss.Color("170"))
+)
+
+type state int
+
+const (
+	all state = iota
+	new
 )
 
 type todo struct {
@@ -55,8 +63,9 @@ func (d itemDelegate) Render(w io.Writer, m list.Model, index int, listItem list
 }
 
 type model struct {
-	list   list.Model
-	items  []todo
+	list      list.Model
+	textInput textinput.Model
+	state     state
 }
 
 func (m model) Init() tea.Cmd {
@@ -64,32 +73,63 @@ func (m model) Init() tea.Cmd {
 }
 
 func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+	var cmd tea.Cmd
+
 	switch msg := msg.(type) {
 	case tea.WindowSizeMsg:
 		m.list.SetWidth(msg.Width)
 		return m, nil
 
 	case tea.KeyMsg:
-		switch keypress := msg.String(); keypress {
-		case "ctrl+c":
-			return m, tea.Quit
+		keypress := msg.String()
 
-		case " ":
-			t, ok := m.list.SelectedItem().(todo)
-			if ok {
+		switch m.state {
+		case all:
+			switch keypress {
+			case "ctrl+c", "q":
+				return m, tea.Quit
+			case "n":
+				m.state = new
+				m.textInput.Reset()
+				return m, cmd
+
+			case " ":
+				t, ok := m.list.SelectedItem().(todo)
+				if !ok {
+					return m, nil
+				}
 				t.completed = !t.completed
 				return m, m.list.SetItem(m.list.Index(), t)
+			}
+		case new:
+			switch keypress {
+			case "enter":
+				if val := m.textInput.Value(); val != "" {
+					cmd = m.list.InsertItem(0, todo{val, false})
+				}
+				m.state = all
+				return m, cmd
+			case "esc":
+				m.state = all
+				return m, nil
 			}
 		}
 	}
 
-	var cmd tea.Cmd
-	m.list, cmd = m.list.Update(msg)
+	switch m.state {
+	case all:
+		m.list, cmd = m.list.Update(msg)
+	case new:
+		m.textInput, cmd = m.textInput.Update(msg)
+	}
 	return m, cmd
 }
 
 func (m model) View() string {
-	return "\n" + m.list.View()
+	if m.state == all {
+		return "\n" + m.list.View()
+	}
+	return "\n" + m.textInput.View()
 }
 
 func main() {
@@ -106,7 +146,13 @@ func main() {
 	l.SetShowStatusBar(false)
 	l.SetFilteringEnabled(false)
 
-	m := model{list: l}
+	ti := textinput.New()
+	ti.Placeholder = "New todo text"
+	ti.CharLimit = 156
+	ti.Width = 20
+	ti.Focus()
+
+	m := model{list: l, textInput: ti}
 
 	if err := tea.NewProgram(m).Start(); err != nil {
 		fmt.Println("Error running program:", err)
