@@ -1,7 +1,7 @@
 package main
 
 import (
-	"fmt"
+	"log"
 	"os"
 
 	"github.com/charmbracelet/bubbles/key"
@@ -20,6 +20,15 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case tea.WindowSizeMsg:
 		h, v := appStyle.GetFrameSize()
 		m.list.SetSize(msg.Width-h, msg.Height-v)
+	case tea.KeyMsg:
+		switch msg.String() {
+		case "ctrl+c", "q", "esc":
+			err := write(m.list.Items())
+			if err != nil {
+				log.Fatalf("Error while writing data file: %s", err)
+			}
+			return m, tea.Quit
+		}
 	}
 
 	if m.view.adding || m.view.editing.editing {
@@ -41,8 +50,8 @@ func updateList(msg tea.Msg, m model) (tea.Model, tea.Cmd) {
 		case key.Matches(msg, m.keys.edit):
 			if t, ok := m.list.SelectedItem().(todo); ok {
 				m.textInput.Placeholder = ""
-				m.textInput.SetValue(t.text)
-				e := editing{done: t.done, index: m.list.Index(), editing: true}
+				m.textInput.SetValue(t.Text)
+				e := editing{done: t.Done, index: m.list.Index(), editing: true}
 				m.view = view{editing: e}
 			}
 			return m, nil
@@ -93,7 +102,7 @@ func main() {
 	m := newModel()
 
 	if err := tea.NewProgram(m).Start(); err != nil {
-		fmt.Println("Error running program:", err)
+		log.Println("Error running program:", err)
 		os.Exit(1)
 	}
 }

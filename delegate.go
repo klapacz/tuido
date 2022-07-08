@@ -20,10 +20,10 @@ func (d itemDelegate) Render(w io.Writer, m list.Model, index int, listItem list
 	}
 
 	c := "[ ]"
-	if t.done {
+	if t.Done {
 		c = "[X]"
 	}
-	str := fmt.Sprintf("%s %s", c, t.text)
+	str := fmt.Sprintf("%s %s", c, t.Text)
 
 	fn := itemStyle.Render
 	if index == m.Index() {
@@ -48,7 +48,7 @@ func newItemDelegate(keys *delegateKeyMap) itemDelegate {
 		case tea.KeyMsg:
 			switch {
 			case key.Matches(msg, keys.toggleDone):
-				t.done = !t.done
+				t.Done = !t.Done
 				return m.SetItem(m.Index(), t)
 			}
 		}

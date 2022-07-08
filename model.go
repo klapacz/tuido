@@ -1,6 +1,8 @@
 package main
 
 import (
+	"log"
+
 	"github.com/charmbracelet/bubbles/key"
 	"github.com/charmbracelet/bubbles/list"
 	"github.com/charmbracelet/bubbles/textinput"
@@ -8,8 +10,8 @@ import (
 )
 
 type todo struct {
-	text string
-	done bool
+	Text string `json:"text"`
+	Done bool   `json:"done"`
 }
 
 func (i todo) FilterValue() string { return "" }
@@ -38,10 +40,9 @@ func (m model) Init() tea.Cmd {
 }
 
 func newModel() model {
-	items := []list.Item{
-		todo{"first", false},
-		todo{"second", false},
-		todo{"third", true},
+	todos, err := read()
+	if err != nil {
+		log.Fatalf("Error while reading data file: %s", err)
 	}
 
 	var (
@@ -49,7 +50,7 @@ func newModel() model {
 		delegateKeys = newDelegateKeyMap()
 	)
 
-	l := list.New(items, newItemDelegate(delegateKeys), 0, 0)
+	l := list.New(todos, newItemDelegate(delegateKeys), 0, 0)
 	l.Title = "tuido"
 	l.SetShowStatusBar(false)
 	l.SetFilteringEnabled(false)
