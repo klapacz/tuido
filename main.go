@@ -5,8 +5,6 @@ import (
 	"os"
 
 	"github.com/charmbracelet/bubbles/key"
-	"github.com/charmbracelet/bubbles/list"
-	"github.com/charmbracelet/bubbles/textinput"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 )
@@ -17,33 +15,17 @@ var (
 	selectedItemStyle = lipgloss.NewStyle().PaddingLeft(2).Foreground(lipgloss.Color("170"))
 )
 
-type todo struct {
-	text string
-	done bool
-}
+func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+	switch msg := msg.(type) {
+	case tea.WindowSizeMsg:
+		h, v := appStyle.GetFrameSize()
+		m.list.SetSize(msg.Width-h, msg.Height-v)
+	}
 
-func (i todo) FilterValue() string { return "" }
-
-type editing struct {
-	editing bool
-	index   int
-	done    bool
-}
-
-type view struct {
-	adding  bool
-	editing editing
-}
-
-type model struct {
-	list      list.Model
-	textInput textinput.Model
-	keys      *listKeyMap
-	view      view
-}
-
-func (m model) Init() tea.Cmd {
-	return tea.EnterAltScreen
+	if m.view.adding || m.view.editing.editing {
+		return updateTextInput(msg, m)
+	}
+	return updateList(msg, m)
 }
 
 func updateList(msg tea.Msg, m model) (tea.Model, tea.Cmd) {
@@ -71,7 +53,7 @@ func updateList(msg tea.Msg, m model) (tea.Model, tea.Cmd) {
 	return m, cmd
 }
 
-func updateAdding(msg tea.Msg, m model) (tea.Model, tea.Cmd) {
+func updateTextInput(msg tea.Msg, m model) (tea.Model, tea.Cmd) {
 	var cmd tea.Cmd
 
 	switch msg := msg.(type) {
@@ -100,19 +82,6 @@ func updateAdding(msg tea.Msg, m model) (tea.Model, tea.Cmd) {
 	return m, cmd
 }
 
-func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
-	switch msg := msg.(type) {
-	case tea.WindowSizeMsg:
-		h, v := appStyle.GetFrameSize()
-		m.list.SetSize(msg.Width-h, msg.Height-v)
-	}
-
-	if m.view.adding || m.view.editing.editing {
-		return updateAdding(msg, m)
-	}
-	return updateList(msg, m)
-}
-
 func (m model) View() string {
 	if m.view.adding || m.view.editing.editing {
 		return appStyle.Render(m.textInput.View())
@@ -121,34 +90,7 @@ func (m model) View() string {
 }
 
 func main() {
-	items := []list.Item{
-		todo{"first", false},
-		todo{"second", false},
-		todo{"third", true},
-	}
-
-	var (
-		listKeys     = newListKeyMap()
-		delegateKeys = newDelegateKeyMap()
-	)
-
-	l := list.New(items, newItemDelegate(delegateKeys), 0, 0)
-	l.Title = "tuido"
-	l.SetShowStatusBar(false)
-	l.SetFilteringEnabled(false)
-	l.AdditionalFullHelpKeys = func() []key.Binding {
-		return []key.Binding{
-			listKeys.insertItem,
-			listKeys.edit,
-		}
-	}
-
-	ti := textinput.New()
-	ti.CharLimit = 156
-	ti.Width = 20
-	ti.Focus()
-
-	m := model{list: l, textInput: ti, keys: listKeys}
+	m := newModel()
 
 	if err := tea.NewProgram(m).Start(); err != nil {
 		fmt.Println("Error running program:", err)
