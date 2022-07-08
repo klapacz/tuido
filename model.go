@@ -29,10 +29,10 @@ type view struct {
 }
 
 type model struct {
-	list      list.Model
-	textInput textinput.Model
-	keys      *listKeyMap
-	view      view
+	list  list.Model
+	input textinput.Model
+	keys  *listKeyMap
+	view  view
 }
 
 func (m model) Init() tea.Cmd {
@@ -57,7 +57,6 @@ func newModel() model {
 	l.AdditionalFullHelpKeys = func() []key.Binding {
 		return []key.Binding{
 			listKeys.insert,
-			listKeys.edit,
 		}
 	}
 
@@ -66,5 +65,5 @@ func newModel() model {
 	ti.Width = 20
 	ti.Focus()
 
-	return model{list: l, textInput: ti, keys: listKeys}
+	return model{list: l, input: ti, keys: listKeys}
 }

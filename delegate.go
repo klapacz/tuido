@@ -35,6 +35,17 @@ func (d itemDelegate) Render(w io.Writer, m list.Model, index int, listItem list
 	fmt.Fprintf(w, fn(str))
 }
 
+type startEditingMsg struct {
+	index int
+	todo  todo
+}
+
+func startEditingCmd(index int, todo todo) func() tea.Msg {
+	return func() tea.Msg {
+		return startEditingMsg{index: index, todo: todo}
+	}
+}
+
 func newItemDelegate(keys *delegateKeyMap) itemDelegate {
 	d := itemDelegate{}
 
@@ -50,12 +61,15 @@ func newItemDelegate(keys *delegateKeyMap) itemDelegate {
 			case key.Matches(msg, keys.toggle):
 				t.Done = !t.Done
 				return m.SetItem(m.Index(), t)
+			case key.Matches(msg, keys.edit):
+				i := m.Index()
+				return startEditingCmd(i, t)
 			}
 		}
 		return nil
 	}
 
-	help := []key.Binding{keys.toggle}
+	help := []key.Binding{keys.toggle, keys.edit}
 	d.ShortHelpFunc = func() []key.Binding {
 		return help
 	}

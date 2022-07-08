@@ -41,19 +41,17 @@ func updateList(msg tea.Msg, m model) (tea.Model, tea.Cmd) {
 	var cmd tea.Cmd
 
 	switch msg := msg.(type) {
+	case startEditingMsg:
+		m.input.Placeholder = ""
+		m.input.SetValue(msg.todo.Text)
+		e := editing{done: msg.todo.Done, index: msg.index, editing: true}
+		m.view = view{editing: e}
+		return m, nil
 	case tea.KeyMsg:
 		switch {
 		case key.Matches(msg, m.keys.insert):
-			m.textInput.Placeholder = "New todo text"
+			m.input.Placeholder = "New todo text"
 			m.view = view{adding: true}
-			return m, nil
-		case key.Matches(msg, m.keys.edit):
-			if t, ok := m.list.SelectedItem().(todo); ok {
-				m.textInput.Placeholder = ""
-				m.textInput.SetValue(t.Text)
-				e := editing{done: t.Done, index: m.list.Index(), editing: true}
-				m.view = view{editing: e}
-			}
 			return m, nil
 		}
 	}
@@ -70,8 +68,8 @@ func updateTextInput(msg tea.Msg, m model) (tea.Model, tea.Cmd) {
 		keypress := msg.String()
 		switch keypress {
 		case "enter":
-			if val := m.textInput.Value(); val != "" {
-				m.textInput.Reset()
+			if val := m.input.Value(); val != "" {
+				m.input.Reset()
 				if m.view.adding {
 					cmd = m.list.InsertItem(0, todo{val, false})
 				} else {
@@ -87,13 +85,13 @@ func updateTextInput(msg tea.Msg, m model) (tea.Model, tea.Cmd) {
 		}
 	}
 
-	m.textInput, cmd = m.textInput.Update(msg)
+	m.input, cmd = m.input.Update(msg)
 	return m, cmd
 }
 
 func (m model) View() string {
 	if m.view.adding || m.view.editing.editing {
-		return appStyle.Render(m.textInput.View())
+		return appStyle.Render(m.input.View())
 	}
 	return appStyle.Render(m.list.View())
 }
