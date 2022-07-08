@@ -56,7 +56,7 @@ func newModel() model {
 	l.SetFilteringEnabled(false)
 	l.AdditionalFullHelpKeys = func() []key.Binding {
 		return []key.Binding{
-			listKeys.insertItem,
+			listKeys.insert,
 			listKeys.edit,
 		}
 	}

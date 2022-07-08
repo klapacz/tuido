@@ -3,13 +3,13 @@ package main
 import "github.com/charmbracelet/bubbles/key"
 
 type listKeyMap struct {
-	insertItem key.Binding
-	edit       key.Binding
+	insert key.Binding
+	edit   key.Binding
 }
 
 func newListKeyMap() *listKeyMap {
 	return &listKeyMap{
-		insertItem: key.NewBinding(
+		insert: key.NewBinding(
 			key.WithKeys("a"),
 			key.WithHelp("a", "add todo"),
 		),

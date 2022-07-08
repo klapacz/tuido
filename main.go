@@ -43,7 +43,7 @@ func updateList(msg tea.Msg, m model) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
 	case tea.KeyMsg:
 		switch {
-		case key.Matches(msg, m.keys.insertItem):
+		case key.Matches(msg, m.keys.insert):
 			m.textInput.Placeholder = "New todo text"
 			m.view = view{adding: true}
 			return m, nil
